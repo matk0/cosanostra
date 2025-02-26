@@ -101,15 +101,10 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello from COSANOSTRA!"))
-	})
-
-	http.HandleFunc("/ws", handleWebSocket)
+	http.HandleFunc("/", handleWebSocket)
 
 	fmt.Println("COSANOSTRA starting on :3000.")
 	if err := http.ListenAndServe(":3000", nil); err != nil {
 		log.Fatal("Error while running ListenAndServe: ", err)
 	}
 }
-

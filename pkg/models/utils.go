@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 )
 
@@ -45,8 +44,14 @@ func ValidateEvent(event *Event) bool {
 		return false
 	}
 
+	// Create a schnorr signature object from the bytes
+	signature, err := schnorr.ParseSignature(sigBytes)
+	if err != nil {
+		return false
+	}
+
 	// Verify the signature
-	return schnorr.Verify(sigBytes, messageHash[:], pubKey)
+	return signature.Verify(messageHash[:], pubKey)
 }
 
 // SerializeEvent creates the canonical form of an event for hashing

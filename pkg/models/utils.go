@@ -1,12 +1,12 @@
 package models
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
-	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 )
 
@@ -14,8 +14,8 @@ import (
 func ValidateEvent(event *Event) bool {
 	// For testing purposes, let's bypass validation temporarily
 	// Comment this out when your relay is ready for production
-	fmt.Println("WARNING: Bypassing validation for testing purposes")
-	return true
+	// fmt.Println("WARNING: Bypassing validation for testing purposes")
+	// return true
 
 	// First, check if the event ID is correct (SHA256 hash of the serialized event)
 	serialized, err := SerializeEvent(event)
@@ -48,8 +48,15 @@ func ValidateEvent(event *Event) bool {
 		return false
 	}
 
-	// Parse the public key
-	pubKeyObj, err := btcec.ParsePubKey(pubKeyBytes)
+	// For Nostr, we need to convert the 32-byte pubkey to a valid secp256k1 public key
+	// Nostr uses the 32-byte x-coordinate of the public key point
+	if len(pubKeyBytes) != 32 {
+		fmt.Printf("Failed to parse pubkey: malformed public key: invalid length: %d\n", len(pubKeyBytes))
+		return false
+	}
+
+	// Create a public key from the x-coordinate only (with y=even)
+	pubKeyObj, err := schnorr.ParsePubKey(pubKeyBytes)
 	if err != nil {
 		fmt.Printf("Failed to parse pubkey: %v\n", err)
 		return false
@@ -83,21 +90,51 @@ func ValidateEvent(event *Event) bool {
 func SerializeEvent(event *Event) (string, error) {
 	// This is the canonical serialization format from NIP-01
 	// [0, pubkey, created_at, kind, tags, content]
+
+	// Properly escape content according to requirements
+	content := escapeContentField(event.Content)
+
 	arr := []interface{}{
 		0,
 		event.PubKey,
 		event.CreatedAt,
 		event.Kind,
 		event.Tags,
-		event.Content,
+		content,
 	}
 
-	serialized, err := json.Marshal(arr)
+	// Use json.Marshal with SetEscapeHTML(false) to avoid unnecessary escaping
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(arr)
 	if err != nil {
 		return "", err
 	}
 
+	// Remove the trailing newline that json.Encoder adds
+	serialized := buffer.Bytes()
+	if len(serialized) > 0 && serialized[len(serialized)-1] == '\n' {
+		serialized = serialized[:len(serialized)-1]
+	}
+
 	return string(serialized), nil
+}
+
+// escapeContentField properly escapes specific characters in content field
+// according to the requirements:
+// - Line break (0x0A): \n
+// - Double quote (0x22): \"
+// - Backslash (0x5C): \\
+// - Carriage return (0x0D): \r
+// - Tab character (0x09): \t
+// - Backspace (0x08): \b
+// - Form feed (0x0C): \f
+func escapeContentField(content string) string {
+	// Note: json.Marshal will handle the escaping for these characters correctly
+	// We use the standard library's JSON marshaling which follows the JSON spec
+	// for character escaping, which aligns with the requirements
+	return content
 }
 
 // MatchesFilter checks if an event matches a specified filter
@@ -196,8 +233,15 @@ func DebugValidateEvent(event *Event, bypassSignature bool) bool {
 		return false
 	}
 
-	// Parse the public key
-	pubKey, err := btcec.ParsePubKey(pubKeyBytes)
+	// For Nostr, we need to convert the 32-byte pubkey to a valid secp256k1 public key
+	// Nostr uses the 32-byte x-coordinate of the public key point
+	if len(pubKeyBytes) != 32 {
+		fmt.Printf("Failed to parse pubkey: malformed public key: invalid length: %d\n", len(pubKeyBytes))
+		return false
+	}
+
+	// Create a public key from the x-coordinate only (with y=even)
+	pubKey, err := schnorr.ParsePubKey(pubKeyBytes)
 	if err != nil {
 		fmt.Printf("Failed to parse pubkey: %v\n", err)
 		return false

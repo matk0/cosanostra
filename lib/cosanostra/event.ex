@@ -48,9 +48,14 @@ defmodule Cosanostra.Event do
       {:ok, metadata} = Cosanostra.Event.parse_metadata(event)
       metadata.name # => "username"
   """
-  def parse_metadata(%__MODULE__{kind: 0, content: content}) do
+  def parse_metadata(%__MODULE__{kind: 0, content: content, created_at: created_at} = event) do
     case Jason.decode(content) do
-      {:ok, parsed} -> {:ok, parsed}
+      {:ok, parsed} -> 
+        # Add created_at from the event to the profile data if not present
+        profile = Map.put_new(parsed, "created_at", created_at)
+        # Add event_id from the event to the profile data
+        profile = Map.put_new(profile, "event_id", event.id)
+        {:ok, profile}
       error -> error
     end
   end

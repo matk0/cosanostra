@@ -17,14 +17,29 @@ defmodule Cosanostra do
   ]
   
   @doc """
-  Connects to a Nostr relay.
+  Connects to a Nostr relay with an optional timeout.
   
   ## Examples
   
       {:ok, client} = Cosanostra.connect("wss://relay.damus.io")
+      {:ok, client} = Cosanostra.connect("wss://relay.damus.io", 10000) # 10 second timeout
   """
-  def connect(url) do
-    Relay.connect(url)
+  def connect(url, timeout \\ 5000) do
+    # Create a task to connect with a timeout
+    task = Task.async(fn -> 
+      # Pass the timeout to Relay.connect
+      Relay.connect(url, [connect_timeout: timeout]) 
+    end)
+    
+    # Wait for the connection with the specified timeout
+    case Task.yield(task, timeout + 1000) || Task.shutdown(task) do
+      {:ok, result} -> 
+        result
+        
+      nil -> 
+        Logger.warning("Connection to #{url} timed out after #{timeout}ms")
+        {:error, :timeout}
+    end
   end
   
   @doc """

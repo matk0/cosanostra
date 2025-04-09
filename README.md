@@ -29,11 +29,22 @@ end
 alias Cosanostra
 alias Cosanostra.Relay
 
-# Connect to a relay
-{:ok, relay} = Cosanostra.connect("wss://relay.damus.io")
+# Connect to a relay with default timeout (5 seconds)
+case Cosanostra.connect("wss://relay.damus.io") do
+  {:ok, relay} ->
+    # Connection successful, use the relay
+    IO.puts("Connected successfully!")
+    
+    # Close the connection when done
+    Relay.close(relay)
+    
+  {:error, reason} ->
+    # Handle connection error
+    IO.puts("Connection failed: #{inspect(reason)}")
+end
 
-# Close the connection when done
-Relay.close(relay)
+# Connect with a custom timeout (10 seconds)
+{:ok, relay} = Cosanostra.connect("wss://relay.damus.io", 10000)
 ```
 
 ### Fetching User Profiles

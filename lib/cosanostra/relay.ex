@@ -13,13 +13,26 @@ defmodule Cosanostra.Relay do
   ## Examples
 
       {:ok, client} = Cosanostra.Relay.connect("wss://relay.damus.io")
+      {:ok, client} = Cosanostra.Relay.connect("wss://relay.damus.io", [connect_timeout: 10000])
   """
-  def connect(url) do
-    WebSockex.start_link(url, __MODULE__, %{
-      url: url,
-      subscriptions: %{},
-      status: :connecting
-    })
+  def connect(url, opts \\ []) do
+    # Default options
+    default_opts = [
+      connect_timeout: 5000
+    ]
+    
+    # Merge with user-provided options
+    opts = Keyword.merge(default_opts, opts)
+    
+    # Start the WebSocket connection
+    WebSockex.start_link(url, __MODULE__, 
+      %{
+        url: url,
+        subscriptions: %{},
+        status: :connecting
+      },
+      opts
+    )
   end
 
   @doc """

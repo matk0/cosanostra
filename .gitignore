@@ -21,3 +21,8 @@ cosanostra-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Custom test scripts
+/test_*.exs
+/nostr_bech32.ex
+/.elixir_ls/

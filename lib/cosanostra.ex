@@ -316,7 +316,7 @@ defmodule Cosanostra do
   end
 
   # Helper function to log all retrieved profiles for debugging
-  defp debug_log_profiles(profiles, pubkey, verbose \\ false) do
+  defp debug_log_profiles(profiles, pubkey, verbose) do
     if Enum.empty?(profiles) do
       Logger.info("No profiles found for pubkey: #{pubkey}")
     else

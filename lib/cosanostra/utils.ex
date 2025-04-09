@@ -72,8 +72,16 @@ defmodule Cosanostra.Utils do
   end
   
   def hex_to_npub(hex) when byte_size(hex) == 64 do
-    # Try with lowercase hex
-    hex_to_npub(String.downcase(hex))
+    # Check if any characters are uppercase
+    lowercase_hex = String.downcase(hex)
+    
+    if hex != lowercase_hex do
+      # Try again with lowercase hex
+      hex_to_npub(lowercase_hex)
+    else
+      # Already lowercase and not a match for any known patterns above
+      {:error, "Unsupported hex key or invalid format. This implementation only supports known test keys."}
+    end
   end
 
   def hex_to_npub(_), do: {:error, "Unsupported hex key or invalid format. This implementation only supports known test keys."}
